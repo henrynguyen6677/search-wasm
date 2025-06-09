@@ -13,6 +13,11 @@ default = ["console_error_panic_hook"]
 [dependencies]
 wasm-bindgen = "0.2.84"
 regex = { version = "1.10.5", features = ["std"] }
+# Thư viện để chuyển đổi (serialize) các struct của Rust thành các định dạng khác
+serde = { version = "1.0", features = ["derive"] }
+
+# Cầu nối giữa Serde và wasm-bindgen để chuyển đổi trực tiếp thành đối tượng JavaScript
+serde-wasm-bindgen = "0.6"
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for

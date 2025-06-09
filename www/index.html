@@ -7,17 +7,9 @@
     <!-- Tải Tailwind CSS để làm đẹp giao diện một cách nhanh chóng -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* CSS tùy chỉnh cho hiệu ứng và giao diện tốt hơn */
+        /* CSS tùy chỉnh cho hiệu ứng và giao diện chuyên nghiệp */
         body {
             font-family: 'Inter', sans-serif;
-        }
-        #results-output {
-            max-height: 50vh; /* Giới hạn chiều cao của khu vực kết quả */
-            overflow-y: auto; /* Thêm thanh cuộn khi kết quả quá dài */
-            background-color: #1f2937; /* Màu nền tối cho code block */
-            color: #d1d5db; /* Màu chữ sáng */
-            border-radius: 0.5rem;
-            padding: 1rem;
         }
         .file-item {
             background-color: #374151;
@@ -28,21 +20,76 @@
             margin-bottom: 0.5rem;
             display: inline-block;
         }
+
+        /* ----- CSS CHO HIỂN THỊ KẾT QUẢ ----- */
+        #results-container {
+            height: 60vh;
+            overflow-y: auto;
+            background-color: #111827;
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+        
+        .result-line {
+            display: flex;
+            align-items: flex-start;
+            padding: 2px 10px;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 24px;
+        }
+
+        .line-number {
+            text-align: right;
+            color: #4b5563;
+            padding-right: 15px;
+            user-select: none;
+        }
+        
+        .line-content {
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #d1d5db;
+        }
+
+        .highlight {
+            background-color: #facc15;
+            color: #1f2937;
+            border-radius: 3px;
+            padding: 1px 2px;
+            font-weight: bold;
+        }
+
+        /* ----- CSS CHO THANH PHÂN TRANG ----- */
+        .pagination-btn {
+            background-color: #4f46e5;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background-color: #4338ca;
+        }
+        .pagination-btn:disabled {
+            background-color: #374151;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
      <link rel="preconnect" href="https://fonts.googleapis.com">
      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-4xl bg-gray-800 p-8 rounded-xl shadow-2xl">
-        <!-- Tiêu đề chính của ứng dụng -->
+    <div class="w-full max-w-6xl bg-gray-800 p-8 rounded-xl shadow-2xl">
         <h1 class="text-4xl font-bold text-center mb-2 text-white">RipGrep-Lite</h1>
         <p class="text-center text-gray-400 mb-8">(WASM Edition)</p>
 
-        <!-- Khu vực điều khiển: chọn file và nhập pattern -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <!-- Ô chọn file -->
             <div class="bg-gray-700 p-4 rounded-lg">
                 <label for="file-input" class="block mb-2 text-lg font-medium text-gray-300">1. Chọn File</label>
                 <input type="file" id="file-input" multiple
@@ -55,7 +102,6 @@
                 <div id="file-list" class="mt-3"></div>
             </div>
 
-            <!-- Ô nhập pattern và nút search -->
             <div class="bg-gray-700 p-4 rounded-lg">
                 <label for="pattern-input" class="block mb-2 text-lg font-medium text-gray-300">2. Nhập Pattern (Regex)</label>
                 <div class="flex">
@@ -69,16 +115,19 @@
             </div>
         </div>
 
-        <!-- Khu vực hiển thị trạng thái và kết quả -->
         <div class="bg-gray-700 p-4 rounded-lg">
-            <h2 class="text-lg font-medium text-gray-300 mb-2">Kết quả</h2>
-            <div id="status" class="text-sm text-gray-400 mb-3 h-5">Chưa có file nào được chọn.</div>
-            <pre><code id="results-output"></code></pre>
+             <!-- Khu vực trạng thái và điều khiển phân trang -->
+            <div class="flex justify-between items-center mb-3">
+                 <div id="status" class="text-sm text-gray-400 h-5">Chưa có file nào được chọn.</div>
+                 <!-- Container cho các nút phân trang, sẽ được tạo bởi JS -->
+                 <div id="pagination-controls" class="flex items-center space-x-4"></div>
+            </div>
+           
+            <!-- Container để hiển thị kết quả -->
+            <div id="results-container"></div>
         </div>
     </div>
 
-    <!-- Nhúng file JavaScript xử lý logic chính của ứng dụng -->
-    <!-- `type="module"` là bắt buộc để sử dụng `import` -->
     <script type="module" src="index.js"></script>
 
 </body>

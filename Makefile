@@ -1,7 +1,7 @@
 .PHONY:
 build:
 	wasm-pack build --target web
-
-dev:
+link:
 	ln -s $(pwd)/pkg $(pwd)/www
+dev:
 	npx serve www
