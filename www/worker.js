@@ -1,9 +1,7 @@
-// worker.js (Phiên bản được đơn giản hóa cho xử lý song song)
+// worker.js (Phiên bản gửi tiến độ)
 
-// Import Searcher và hàm init từ module WASM.
 import init, {Searcher} from './pkg/ripgrep_lite_wasm.js';
 
-// Khởi tạo WASM và báo hiệu sẵn sàng.
 async function initWasm() {
   await init();
   self.postMessage({type: 'ready'});
@@ -13,7 +11,6 @@ initWasm().catch(error => {
   self.postMessage({type: 'error', text: 'Không thể khởi tạo lõi xử lý.'});
 });
 
-// Lắng nghe tin nhắn từ luồng chính (chỉ một lần duy nhất)
 self.onmessage = async (event) => {
   const {type, payload} = event.data;
 
@@ -21,12 +18,14 @@ self.onmessage = async (event) => {
     const {file, pattern} = payload;
 
     try {
-      // 1. Tạo một instance Searcher
       const searcher = new Searcher(pattern);
-
-      // 2. Bắt đầu đọc stream file
       const stream = file.stream();
       const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+
+      // THAY ĐỔI: Thêm logic theo dõi tiến độ
+      const fileSize = file.size;
+      let readBytes = 0;
+      let lastReportedProgress = -1;
 
       while (true) {
         const {done, value} = await reader.read();
@@ -35,14 +34,19 @@ self.onmessage = async (event) => {
           break;
         }
         searcher.process_chunk(value);
+
+        // THAY ĐỔI: Tính toán và gửi tiến độ về luồng chính
+        readBytes += value.length;
+        const progress = fileSize > 0 ? Math.round((readBytes / fileSize) * 100) : 0;
+
+        // Chỉ gửi update nếu tiến độ thay đổi để tránh spam tin nhắn
+        if (progress > lastReportedProgress) {
+          self.postMessage({type: 'progress', progress: progress});
+          lastReportedProgress = progress;
+        }
       }
 
-      // 3. Sau khi xử lý xong, lấy toàn bộ kết quả (không phân trang ở đây)
-      // và gửi về cho luồng chính để gộp lại.
-      // Lõi Rust sẽ trả về một JsValue, nhưng nó thực chất là đối tượng PaginatedResult
       const finalResult = searcher.get_paginated_result(1, Number.MAX_SAFE_INTEGER);
-
-      // Gửi toàn bộ danh sách các dòng khớp về
       self.postMessage({type: 'done', matches: finalResult.lines});
 
     } catch (e) {

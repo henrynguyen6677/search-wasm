@@ -1,4 +1,4 @@
-// index.js (Parallel Worker Manager Version - English)
+// index.js (Parallel Worker Manager Version - English - Progress Fix)
 
 // --- GLOBAL CONFIG & STATE ---
 const PAGE_SIZE = 100; // Results per page
@@ -17,9 +17,12 @@ function main() {
   const resultsContainer = document.getElementById('results-container');
   const paginationControls = document.getElementById('pagination-controls');
 
+  // THAY ĐỔI: Lấy tham chiếu đến các phần tử progress bar
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+
   // --- UI RENDERING FUNCTIONS ---
 
-  // Renders a specific page of results from the `allResultLines` array
   function renderResults(page) {
     resultsContainer.innerHTML = '';
     currentPage = page;
@@ -35,10 +38,9 @@ function main() {
       html += `<div class="result-line"><span class="line-number">${globalLineNumber}.</span><span class="line-content">${highlightedContent}</span></div>`;
     });
     resultsContainer.innerHTML = html;
-    resultsContainer.scrollTop = 0; // Always scroll to top on page change
+    resultsContainer.scrollTop = 0;
   }
 
-  // Creates the pagination control buttons
   function renderPagination() {
     paginationControls.innerHTML = '';
     if (totalMatches === 0) return;
@@ -55,7 +57,7 @@ function main() {
     prevButton.onclick = () => {
       if (currentPage > 1) {
         renderResults(currentPage - 1);
-        renderPagination(); // Re-render pagination to update state
+        renderPagination();
       }
     };
 
@@ -66,7 +68,7 @@ function main() {
     nextButton.onclick = () => {
       if (currentPage < totalPages) {
         renderResults(currentPage + 1);
-        renderPagination(); // Re-render pagination to update state
+        renderPagination();
       }
     };
     paginationControls.append(prevButton, pageInfo, nextButton);
@@ -83,6 +85,9 @@ function main() {
     allResultLines = [];
     totalMatches = 0;
 
+    progressBar.style.width = '0%';
+    progressContainer.classList.add('hidden');
+
     if (files.length === 0 || !pattern) {
       statusDiv.textContent = 'Error: Please select files and enter a pattern.';
       return;
@@ -97,25 +102,44 @@ function main() {
 
     statusDiv.textContent = `Initializing ${files.length} parallel worker threads...`;
 
-    // Create an array of Promises, one for each worker processing a file
-    const workerPromises = Array.from(files).map(file => {
+    // --- SỬA LỖI & CẢI TIẾN ---
+    // Sử dụng một mảng đơn giản để theo dõi tiến độ, ổn định hơn Map.
+    const workerProgresses = Array(files.length).fill(0);
+    progressContainer.classList.remove('hidden');
+
+    function updateOverallProgress() {
+      if (workerProgresses.length === 0) return;
+      // Tính toán tiến độ trung bình của tất cả các worker
+      const totalProgress = workerProgresses.reduce((sum, p) => sum + p, 0) / workerProgresses.length;
+      progressBar.style.width = `${totalProgress}%`;
+    }
+
+
+    const workerPromises = Array.from(files).map((file, index) => { // Lấy index của file
       return new Promise((resolve, reject) => {
         const worker = new Worker(new URL('worker.js', import.meta.url), {type: 'module'});
 
         worker.onmessage = (event) => {
-          const {type, matches, text} = event.data;
+          const {type, matches, text, progress} = event.data;
+
           if (type === 'ready') {
-            // Worker is ready, dispatch the job
             worker.postMessage({
               type: 'processFile',
               payload: {file, pattern}
             });
-          } else if (type === 'done') {
-            // Worker is done, return the result
-            resolve(matches); // Fulfill this promise
-            worker.terminate(); // Clean up the worker
+          } else if (type === 'progress') {
+            // Cập nhật tiến độ của worker tại đúng vị trí của nó trong mảng
+            console.log(`Worker ${index} progress: ${progress}%`); // Thêm log để debug
+            workerProgresses[index] = progress;
+            updateOverallProgress();
+          }
+          else if (type === 'done') {
+            workerProgresses[index] = 100; // Đảm bảo worker này đạt 100%
+            updateOverallProgress();
+            resolve(matches);
+            worker.terminate();
           } else if (type === 'error') {
-            reject(new Error(text)); // Report error
+            reject(new Error(text));
             worker.terminate();
           }
         };
@@ -129,24 +153,18 @@ function main() {
 
     try {
       statusDiv.textContent = `Processing ${files.length} files in parallel...`;
-      // Wait for all workers to complete
       const resultsFromAllWorkers = await Promise.all(workerPromises);
 
       statusDiv.textContent = 'Aggregating results...';
+      progressBar.style.width = '100%';
 
-      // --- FIX FOR RangeError ---
-      // Aggregate results from all workers into one large array safely.
-      // Instead of .push(...matches), which fails on large arrays,
-      // we use a standard loop.
       for (const matches of resultsFromAllWorkers) {
-        // This is a simple and safe way to concatenate large arrays.
         allResultLines = allResultLines.concat(matches);
       }
       totalMatches = allResultLines.length;
 
-      // Display results
       if (totalMatches > 0) {
-        renderResults(1); // Show the first page
+        renderResults(1);
         renderPagination();
         statusDiv.textContent = `Done! Found ${totalMatches} total matches.`;
       } else {
@@ -156,17 +174,20 @@ function main() {
     } catch (error) {
       console.error("Error during parallel processing:", error);
       statusDiv.textContent = 'An error occurred during processing.';
+    } finally {
+      setTimeout(() => {
+        progressContainer.classList.add('hidden');
+      }, 1000);
     }
   }
 
   searchButton.addEventListener('click', handleSearch);
 
-  // Unchanged file input handler
   fileInput.addEventListener('change', () => {
     fileListDiv.innerHTML = '';
     if (files.length > 0) {
       statusDiv.textContent = `Selected ${files.length} files.`;
-      for (const file of fileInput.files) {
+      for (const file of fileListDiv) {
         const fileTag = document.createElement('span');
         fileTag.className = 'file-item';
         fileTag.textContent = file.name;
@@ -176,6 +197,5 @@ function main() {
   });
 }
 
-// Start the application logic
 main();
 
