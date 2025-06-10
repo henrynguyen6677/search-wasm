@@ -1,0 +1,27 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Chạy mỗi khi có commit mới vào nhánh main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      - name: Install wasm-pack 🦀
+        uses: jetli/wasm-pack-action@v0.4.0
+
+      - name: Build WASM ⚙️
+        run: wasm-pack build --target web
+      - name: Prepare Deployment 📦
+        run: |
+          cp -r pkg www/
+      - name: Deploy to GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: www
