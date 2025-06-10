@@ -1,13 +1,13 @@
-// index.js (Phiên bản Quản lý Worker Song song)
+// index.js (Parallel Worker Manager Version - English)
 
-// --- CẤU HÌNH & TRẠNG THÁI TOÀN CỤC ---
-const PAGE_SIZE = 100; // Hiển thị 100 kết quả mỗi trang
+// --- GLOBAL CONFIG & STATE ---
+const PAGE_SIZE = 100; // Results per page
 let currentPage = 1;
 let totalMatches = 0;
 let highlightRegex;
-let allResultLines = []; // Mảng lớn chứa TẤT CẢ kết quả từ các worker
+let allResultLines = []; // A large array to hold ALL results from workers
 
-// Hàm chính để khởi động logic
+// Main function to initialize logic
 function main() {
   const fileInput = document.getElementById('file-input');
   const patternInput = document.getElementById('pattern-input');
@@ -17,9 +17,9 @@ function main() {
   const resultsContainer = document.getElementById('results-container');
   const paginationControls = document.getElementById('pagination-controls');
 
-  // --- CÁC HÀM XỬ LÝ GIAO DIỆN ---
+  // --- UI RENDERING FUNCTIONS ---
 
-  // Hàm này render một trang kết quả cụ thể từ mảng `allResultLines`
+  // Renders a specific page of results from the `allResultLines` array
   function renderResults(page) {
     resultsContainer.innerHTML = '';
     currentPage = page;
@@ -35,10 +35,10 @@ function main() {
       html += `<div class="result-line"><span class="line-number">${globalLineNumber}.</span><span class="line-content">${highlightedContent}</span></div>`;
     });
     resultsContainer.innerHTML = html;
-    resultsContainer.scrollTop = 0; // Luôn cuộn lên đầu khi chuyển trang
+    resultsContainer.scrollTop = 0; // Always scroll to top on page change
   }
 
-  // Hàm tạo các nút điều khiển phân trang
+  // Creates the pagination control buttons
   function renderPagination() {
     paginationControls.innerHTML = '';
     if (totalMatches === 0) return;
@@ -46,78 +46,76 @@ function main() {
 
     const pageInfo = document.createElement('span');
     pageInfo.className = 'text-sm text-gray-400';
-    pageInfo.textContent = `Trang ${currentPage} / ${totalPages}`;
+    pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
 
     const prevButton = document.createElement('button');
-    prevButton.textContent = 'Trang Trước';
+    prevButton.textContent = 'Previous';
     prevButton.className = 'pagination-btn';
     prevButton.disabled = currentPage === 1;
     prevButton.onclick = () => {
       if (currentPage > 1) {
         renderResults(currentPage - 1);
-        renderPagination(); // Cập nhật lại thanh phân trang
+        renderPagination(); // Re-render pagination to update state
       }
     };
 
     const nextButton = document.createElement('button');
-    nextButton.textContent = 'Trang Tiếp';
+    nextButton.textContent = 'Next';
     nextButton.className = 'pagination-btn';
     nextButton.disabled = currentPage === totalPages;
     nextButton.onclick = () => {
       if (currentPage < totalPages) {
         renderResults(currentPage + 1);
-        renderPagination(); // Cập nhật lại thanh phân trang
+        renderPagination(); // Re-render pagination to update state
       }
     };
     paginationControls.append(prevButton, pageInfo, nextButton);
   }
 
-  // --- SỰ KIỆN CHÍNH (Đã được viết lại hoàn toàn) ---
+  // --- MAIN EVENT HANDLER ---
   async function handleSearch() {
     const files = fileInput.files;
     const pattern = patternInput.value;
 
-    // Reset trạng thái và giao diện
+    // Reset state and UI
     resultsContainer.innerHTML = '';
     paginationControls.innerHTML = '';
     allResultLines = [];
     totalMatches = 0;
 
     if (files.length === 0 || !pattern) {
-      statusDiv.textContent = 'Lỗi: Vui lòng chọn file và nhập pattern.';
+      statusDiv.textContent = 'Error: Please select files and enter a pattern.';
       return;
     }
 
     try {
       highlightRegex = new RegExp(pattern, 'g');
     } catch (e) {
-      statusDiv.textContent = 'Lỗi: Pattern Regex không hợp lệ.';
+      statusDiv.textContent = 'Error: Invalid Regex pattern.';
       return;
     }
 
-    statusDiv.textContent = `Đang khởi tạo ${files.length} luồng xử lý song song...`;
+    statusDiv.textContent = `Initializing ${files.length} parallel worker threads...`;
 
-    // Tạo một mảng các Promise, mỗi Promise tương ứng với một Worker xử lý một file
+    // Create an array of Promises, one for each worker processing a file
     const workerPromises = Array.from(files).map(file => {
       return new Promise((resolve, reject) => {
-        // Tạo một Worker mới cho file này
         const worker = new Worker(new URL('worker.js', import.meta.url), {type: 'module'});
 
-        // Lắng nghe tin nhắn từ worker
         worker.onmessage = (event) => {
           const {type, matches, text} = event.data;
           if (type === 'ready') {
-            // Worker đã sẵn sàng, giao việc cho nó
+            // Worker is ready, dispatch the job
             worker.postMessage({
               type: 'processFile',
               payload: {file, pattern}
             });
           } else if (type === 'done') {
-            // Worker đã xử lý xong, trả về kết quả
-            resolve(matches); // Hoàn thành Promise này
-            worker.terminate(); // Dọn dẹp worker để giải phóng bộ nhớ
+            // Worker is done, return the result
+            resolve(matches); // Fulfill this promise
+            worker.terminate(); // Clean up the worker
           } else if (type === 'error') {
-            reject(new Error(text)); // Báo lỗi
+            reject(new Error(text)); // Report error
             worker.terminate();
           }
         };
@@ -130,40 +128,44 @@ function main() {
     });
 
     try {
-      statusDiv.textContent = `Đang xử lý ${files.length} file song song...`;
-      // Đợi tất cả các worker hoàn thành
+      statusDiv.textContent = `Processing ${files.length} files in parallel...`;
+      // Wait for all workers to complete
       const resultsFromAllWorkers = await Promise.all(workerPromises);
 
-      statusDiv.textContent = 'Đang gộp kết quả...';
+      statusDiv.textContent = 'Aggregating results...';
 
-      // Gộp kết quả từ tất cả các worker vào một mảng lớn duy nhất
+      // --- FIX FOR RangeError ---
+      // Aggregate results from all workers into one large array safely.
+      // Instead of .push(...matches), which fails on large arrays,
+      // we use a standard loop.
       for (const matches of resultsFromAllWorkers) {
-        allResultLines.push(...matches);
+        // This is a simple and safe way to concatenate large arrays.
+        allResultLines = allResultLines.concat(matches);
       }
       totalMatches = allResultLines.length;
 
-      // Hiển thị kết quả
+      // Display results
       if (totalMatches > 0) {
-        renderResults(1); // Hiển thị trang đầu tiên
+        renderResults(1); // Show the first page
         renderPagination();
-        statusDiv.textContent = `Hoàn tất! Tìm thấy tổng cộng ${totalMatches} dòng khớp.`;
+        statusDiv.textContent = `Done! Found ${totalMatches} total matches.`;
       } else {
-        statusDiv.textContent = 'Không tìm thấy kết quả nào.';
+        statusDiv.textContent = 'No matches found.';
       }
 
     } catch (error) {
-      console.error("Lỗi khi xử lý song song:", error);
-      statusDiv.textContent = 'Đã có lỗi xảy ra trong quá trình xử lý.';
+      console.error("Error during parallel processing:", error);
+      statusDiv.textContent = 'An error occurred during processing.';
     }
   }
 
   searchButton.addEventListener('click', handleSearch);
 
-  // Code xử lý file-input không thay đổi
+  // Unchanged file input handler
   fileInput.addEventListener('change', () => {
     fileListDiv.innerHTML = '';
     if (files.length > 0) {
-      statusDiv.textContent = `Đã chọn ${files.length} file.`;
+      statusDiv.textContent = `Selected ${files.length} files.`;
       for (const file of fileInput.files) {
         const fileTag = document.createElement('span');
         fileTag.className = 'file-item';
@@ -174,6 +176,6 @@ function main() {
   });
 }
 
-// Chạy hàm chính để khởi động ứng dụng
+// Start the application logic
 main();
 
