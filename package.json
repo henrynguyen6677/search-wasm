@@ -1,0 +1,9 @@
+{
+  "name": "ripgrep-lite-wasm",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "bash build.sh",
+    "build:cf": "wasm-pack build --target web --out-dir pkg && cd frontend && npm ci && npm run build && cd .. && mkdir -p dist/assets && cp -r pkg/* dist/assets/ && cp frontend/_headers dist/"
+  },
+  "description": "RipGrep-Lite WASM - Fast text search with Rust and WebAssembly"
+}
