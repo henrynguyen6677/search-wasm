@@ -7,18 +7,18 @@
   Referrer-Policy: strict-origin-when-cross-origin
 
 # WASM files
-*.wasm
+/*.wasm
   Content-Type: application/wasm
   Cache-Control: public, max-age=31536000, immutable
 
 # JavaScript modules 
-*.js
+/*.js
   Cache-Control: public, max-age=31536000, immutable
 
 # CSS files
-*.css
+/*.css
   Cache-Control: public, max-age=31536000, immutable
 
 # HTML files (no cache for updates)
-*.html
+/*.html
   Cache-Control: public, max-age=0, must-revalidate 
