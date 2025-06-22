@@ -232,9 +232,11 @@ async function main() {
     }
 
     searchButton.addEventListener('click', handleSearch);
-    searchButton.addEventListener('keydown', (e) => {
-      console.log(e.key);
+    
+    // Thêm Enter key support cho pattern input
+    patternInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        e.preventDefault(); // Tránh form submission
         handleSearch();
       }
     });
