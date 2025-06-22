@@ -1,20 +1,16 @@
 #!/usr/bin/env bash
 
-# Build script for Cloudflare Pages deployment
+# Build script for Cloudflare Pages deployment (Frontend only)
 set -euo pipefail
 
 echo "🔍 Current directory: $(pwd)"
 echo "📁 Contents: $(ls -la)"
 
-echo "🦀 Building Rust to WASM..."
-# Check if wasm-pack exists
-if ! command -v wasm-pack &> /dev/null; then
-    echo "❌ wasm-pack not found. Installing..."
-    curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-    export PATH="$HOME/.cargo/bin:$PATH"
+echo "📦 Using pre-built WASM files from pkg/"
+if [ ! -d "pkg" ]; then
+    echo "❌ WASM files not found! Run 'wasm-pack build --target web --out-dir pkg --release' locally first"
+    exit 1
 fi
-
-wasm-pack build --target web --out-dir pkg
 
 echo "🌐 Building Frontend..."
 cd frontend
@@ -24,10 +20,10 @@ npm run build
 echo "📦 Copying WASM files to dist..."
 cd ..
 mkdir -p dist/assets
-cp -r pkg/* dist/assets/ 2>/dev/null || true
+cp -r pkg/* dist/assets/
 
 echo "📄 Copying headers for Cloudflare..."
-cp frontend/_headers dist/ 2>/dev/null || echo "No _headers file found"
+cp frontend/_headers dist/
 
 echo "🔧 Updating import paths for production..."
 # Update worker.js to use correct WASM path
