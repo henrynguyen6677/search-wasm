@@ -16,12 +16,25 @@ export default defineConfig({
     target: 'esnext',
     assetsInlineLimit: 0,
     outDir: '../dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === '_headers') {
+            return '_headers'
+          }
+          return 'assets/[name]-[hash][extname]'
+        }
+      }
+    },
+    copyPublicDir: false
   },
   // Optimized deps để xử lý WASM
   optimizeDeps: {
     exclude: ['../pkg/ripgrep_lite_wasm.js']
   },
   // Cấu hình WASM
-  assetsInclude: ['**/*.wasm']
+  assetsInclude: ['**/*.wasm'],
+  // Public directory để copy static files
+  publicDir: '.'
 }) 
