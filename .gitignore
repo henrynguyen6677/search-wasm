@@ -6,3 +6,7 @@ bin/
 wasm-pack.log
 .idea
 .DS_Store
+.wrangler
+dist
+frontend/dist
+frontend/node_modules

@@ -4,4 +4,4 @@ build:
 link:
 	ln -s $(pwd)/pkg $(pwd)/www
 dev:
-	npx serve www
+	( cd frontend && npm run dev )
