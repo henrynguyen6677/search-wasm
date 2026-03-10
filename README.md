@@ -1,3 +1,6 @@
+
+[RipGrep-Lite-WASM-.webm](https://github.com/user-attachments/assets/d1b8ba7c-f22a-4009-be59-c5b121c7c1c1)
+
 # RipGrep-Lite WASM
 
 A high-performance regex search tool built with Rust (compiled to WebAssembly) and modern web technologies.
