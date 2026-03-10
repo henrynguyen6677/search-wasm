@@ -1,5 +1,5 @@
 
-[RipGrep-Lite-WASM-.webm](https://github.com/user-attachments/assets/d1b8ba7c-f22a-4009-be59-c5b121c7c1c1)
+[RipGrep-Lite-WASM.webm](https://github.com/user-attachments/assets/2787ef5c-cbec-4d06-9ee2-5097ebc4467f)
 
 # RipGrep-Lite WASM
 
